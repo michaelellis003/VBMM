@@ -24,13 +24,11 @@ vi <- function(
     max_iter = 30
 ) {
 
-
     N <- length(y) # sample size
-    sum_y <- sum(y)
     elbos <- rep(-Inf, max_iter)
+    y_mat <- matrix(rep(y, K), nrow = N, ncol = K)
 
     ## initialize parameters
-    tilde_pi_q_pi <- matrix(0, nrow = N, ncol = K)
     pi_q_pi <- matrix(0, nrow = N, ncol = K)
 
     alpha_q_V <- rep(1, K-1)
@@ -44,32 +42,21 @@ vi <- function(
 
     for(m in 1:max_iter) {
 
-        ## expectation of sigma^2
-        E_sigma_sq <- B_q_sigmasq/A_q_sigmasq
+        E_sigma_sq <- B_q_sigmasq/A_q_sigmasq # E[sigma^2_k]
+        E_log_sigma_sq <- log(B_q_sigmasq) - digamma(A_q_sigmasq) # E[log sigma^2_k]
+        E_log_V <- digamma(alpha_q_V) - digamma(alpha_q_V + beta_q_V) # E[log V_k]
+        E_log_1_V <- digamma(beta_q_V) - digamma(alpha_q_V + beta_q_V) # E[log 1-V_k]
+        E_SS <- t(apply(y_mat, 1, function(x) (x-mu_q_mu)^2 + sigmasq_q_mu)) # E[(y - mu_k)^2]
 
-        ## optimal density for z_ik
-        for(k in 1:K) {
-            ### stick-breaking representation
-            E_pi_k <- 0
-            if(k == 1) {
-                E_pi_k <- digamma(alpha_q_V[k]) - digamma(alpha_q_V[k] + beta_q_V[k])
-            } else if (k > 1 & k < K) {
-                E_pi_k <- digamma(alpha_q_V[k]) - digamma(alpha_q_V[k] + beta_q_V[k]) +
-                    sum(digamma(beta_q_V[1:(k-1)]) -
-                            digamma(alpha_q_V[1:(k-1)] + beta_q_V[1:(k-1)]))
-            } else { # if k == K then E[log V_K] = E[log 1] = 0
-                E_pi_k <- sum(digamma(beta_q_V[1:(k-1)]) -
-                                  digamma(alpha_q_V[1:(k-1)] + beta_q_V[1:(k-1)]))
-            }
+        ## optimal density for z_i
+        pi_q_pi <- update_optimal_z(y, N, K,
+                                    E_sigma_sq,
+                                    E_log_sigma_sq,
+                                    E_log_V,
+                                    E_log_1_V,
+                                    E_SS)
 
-            tilde_pi_q_pi[, k] <- E_pi_k -
-                (1/2)*(digamma(A_q_sigmasq[k]) + log(B_q_sigmasq[k]) +
-                           (1/E_sigma_sq)*((y-mu_q_mu[k])^2 + sigmasq_q_mu[k]))
-        }
-
-        pi_q_pi <- t(apply(tilde_pi_q_pi, 1, function(x)exp(x)/sum(exp(x))))
-
-        E_n <- colSums(pi_q_pi) # a count of observations in each group
+        E_n <- colSums(pi_q_pi) # a count of observations in each cluster
 
         for(k in 1:K){
 
