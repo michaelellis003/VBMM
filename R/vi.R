@@ -6,7 +6,7 @@
 #' @param sigmasq0
 #' @param A
 #' @param B
-#' @param beta
+#' @param beta0
 #' @param max_iter
 #'
 #' @return
@@ -16,11 +16,11 @@
 vi <- function(
     y,
     K = 20,
-    mu0 = 0,
+    mu0 = 1,
     sigmasq0 = 10^8,
     A = 0.01,
     B = 0.01,
-    beta = 0.5,
+    beta0 = 0.5,
     max_iter = 30
 ) {
 
@@ -40,21 +40,19 @@ vi <- function(
     A_q_sigmasq <- rep(1, K)
     B_q_sigmasq <- rep(1, K)
 
-    for(m in 1:max_iter) {
+    ## calculate initial expectations
+    E_sigma_sq <- B_q_sigmasq/A_q_sigmasq # E[sigma^2_k]
+    E_log_sigma_sq <- log(B_q_sigmasq) - digamma(A_q_sigmasq) # E[log sigma^2_k]
+    E_log_V <- digamma(alpha_q_V) - digamma(alpha_q_V + beta_q_V) # E[log V_k]
+    E_log_1_V <- digamma(beta_q_V) - digamma(alpha_q_V + beta_q_V) # E[log 1-V_k]
+    E_SS <- t(apply(y_mat, 1, function(x) (x-mu_q_mu)^2 + sigmasq_q_mu)) # E[(y - mu_k)^2]
+    E_log_pi <- calculate_E_log_pi(K, E_log_V, E_log_1_V)
 
-        E_sigma_sq <- B_q_sigmasq/A_q_sigmasq # E[sigma^2_k]
-        E_log_sigma_sq <- log(B_q_sigmasq) - digamma(A_q_sigmasq) # E[log sigma^2_k]
-        E_log_V <- digamma(alpha_q_V) - digamma(alpha_q_V + beta_q_V) # E[log V_k]
-        E_log_1_V <- digamma(beta_q_V) - digamma(alpha_q_V + beta_q_V) # E[log 1-V_k]
-        E_SS <- t(apply(y_mat, 1, function(x) (x-mu_q_mu)^2 + sigmasq_q_mu)) # E[(y - mu_k)^2]
+    for(m in 1:max_iter) {
 
         ## optimal density for z_i
         pi_q_pi <- update_optimal_z(y, N, K,
-                                    E_sigma_sq,
-                                    E_log_sigma_sq,
-                                    E_log_V,
-                                    E_log_1_V,
-                                    E_SS)
+                                    E_log_pi, E_sigma_sq, E_log_sigma_sq, E_SS)
 
         E_n <- colSums(pi_q_pi) # a count of observations in each cluster
 
@@ -63,7 +61,7 @@ vi <- function(
             ## optimal density for V_k
             if(k < K) {
                 alpha_q_V[k] <- 1 + E_n[k]
-                beta_q_V[k] <- beta + sum(E_n[(k+1):K])
+                beta_q_V[k] <- beta0 + sum(E_n[(k+1):K])
             }
 
             ## optimal density for mu_k
@@ -74,6 +72,16 @@ vi <- function(
             A_q_sigmasq[k] <- A + E_n[k]/2
             B_q_sigmasq[k] <- B + (1/2)*(sum(((y - mu_q_mu[k])^2 + sigmasq_q_mu[k])*pi_q_pi[, k]))
         }
+
+        ## update expectations
+        E_sigma_sq <- B_q_sigmasq/A_q_sigmasq # E[sigma^2_k]
+        E_log_sigma_sq <- log(B_q_sigmasq) - digamma(A_q_sigmasq) # E[log sigma^2_k]
+        E_log_V <- digamma(alpha_q_V) - digamma(alpha_q_V + beta_q_V) # E[log V_k]
+        E_log_1_V <- digamma(beta_q_V) - digamma(alpha_q_V + beta_q_V) # E[log 1-V_k]
+        E_SS <- t(apply(y_mat, 1, function(x) (x-mu_q_mu)^2 + sigmasq_q_mu)) # E[(y - mu_k)^2]
+        E_log_pi <- calculate_E_log_pi(K, E_log_V, E_log_1_V)
+
+
 
     }
 
