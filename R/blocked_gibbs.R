@@ -1,4 +1,4 @@
-#' Bloack Gibbs Sampler for Infinite Gaussian Mixture Model
+#' Blocked Gibbs Sampler for Infinite Gaussian Mixture Model
 #'
 #' @param y
 #' @param K

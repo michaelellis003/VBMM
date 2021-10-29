@@ -1,0 +1,118 @@
+---
+title: "Variational Bayesian Inference for a Mixture of Mixtures"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## A Finite Mixture of Finite Gaussian Mixtures 
+Let $\mathbf{y} = (y_1, y_2, \dots, y_N)$ be a sample from a finite mixture of finite Gaussian mixtures. We use shared kernels by letting $\mu_{bk} = \mu_{k}$ and $\sigma^2_{bk} = \sigma^2_{k}$ for all $k=1,2, \dots, K$ and $b=1,2, \dots, B$. Then their joint density is given by
+\begin{align*}
+p(\mathbf{y} \mid \boldsymbol{\mu}, \boldsymbol{\sigma^2}, \{\mathbf{p}\}_{b=1}^B, \boldsymbol{\phi}) &= \prod_{i=1}^N \sum_{b=1}^{B} \phi_b \sum_{k=1}^{K} p_{bk} N(y_i \mid \mu_{bk}, \sigma^2_{bk}) \\
+&= \prod_{i=1}^N \sum_{b=1}^{B} \phi_b \sum_{k=1}^{K} p_{bk} N(y_i \mid \mu_{k}, \sigma^2_{k}).
+\end{align*}
+where $\boldsymbol{\phi} = (\phi_1, \phi_2, \dots, \phi_B)^{\prime}$ with $\sum_{b=1}^B \phi_b =1$ and $\{\mathbf{p}\}_{b=1}^B = \{\mathbf{p}_1, \dots, \mathbf{p}_B \}$ and $\mathbf{p}_b = (p_{b1}, p_{b2}, \dots, p_{bK})^{\prime}$ with $\sum_{k=1}^{K}p_{bk} = 1$.
+
+Let the weights $\boldsymbol{\phi}$ and $\mathbf{p}_b$ have a $\text{Dirichlet}(\alpha_{\phi} \mathbf{1})$ and $\text{Dirichlet}(\alpha_{p} \mathbf{1})$ prior respectively. For each $y_i$ we can introduce auxiliary variable vectors $\mathbf{w} = (\mathbf{w}_1, \mathbf{w}_2, \dots, \mathbf{w}_N)$ for the "parent" distribution where $\sum_{b=1}^{B} w_{ib} = 1$ and $p(w_{ib} = 1) = \phi_b$, Then given the "parent" distribution we can introduce another set of auxiliary variable vectors $\mathbf{z}_b = (\mathbf{z}_{b1}, \mathbf{z}_{b2}, \dots, \mathbf{z}_{bN})$ for the "child" distribution where $\sum_{k=1}^{K} z_{ibk} = 1$ and $p(z_{ibk} = 1) = p_{bk}$. Then, $\mathbf{w} \mid \boldsymbol{\phi} \sim \text{Multinomial}(N, \boldsymbol{\phi})$ and $\mathbf{z}_b \mid \mathbf{w}, \boldsymbol{p}_b \sim \text{Multinomial}(N, \mathbf{p}_b)$. 
+
+Now the joint density can be written as
+\begin{align*}
+p(\mathbf{y} \mid \boldsymbol{\mu}, \boldsymbol{\sigma^2}, \mathbf{w}, \{\mathbf{z}_b\}_{b=1}^B) &= \prod_{i=1}^N \prod_{b=1}^B \prod_{k=1}^K p(y_i \mid \mu_k, \sigma_k^2)^{w_{ib} z_{ibk}} p(\mathbf{z}_b \mid \mathbf{w}, \boldsymbol{p}_b) p(\mathbf{w} \mid \boldsymbol{\phi})
+\end{align*}
+
+## A Finite Mixture of Infinite Gaussian Mixtures 
+Extending this to a finite mixture of infinite Gaussian mixtures model using the Stick-breaking representation of a Dirichlet Process.
+\begin{align*}
+p(\mathbf{y} \mid \boldsymbol{\mu}, \boldsymbol{\sigma^2}, \mathbf{w}, \{\mathbf{z}_b\}_{b=1}^B) 
+&= \prod_{i=1}^N \prod_{b=1}^B \prod_{k=1}^{\infty} p(y_i \mid \mu_k, \sigma_k^2)^{w_{ib} z_{ibk}} p(\mathbf{z}_b \mid \mathbf{w}, \boldsymbol{p}_b) p(\mathbf{w} \mid \boldsymbol{\phi}) \\
+p(\mathbf{z}_b \mid \mathbf{w}, \boldsymbol{p}_b) &= \text{Multinomial}(N, \mathbf{p}_b) \quad \text{where} \quad \mathbf{p}_b = (p_{b1}, p_{b2}, \dots ) \\
+p_{bk} &= V_{bk} \prod_{k=1}^{k-1}(1 - V_{bk}) \quad \text{where} \quad V_{bk} \sim \text{Beta}(1, \beta_b) \quad b=1,2, \dots, B \\
+p(\mathbf{w} \mid \boldsymbol{\phi}) &= \text{Multinomial}(N, \boldsymbol{\phi}) \\
+p(\boldsymbol{\phi}) &= \text{Dirichlet}(\alpha_{\phi} \mathbf{1}) \\
+p(\mu_k) &= N(\mu_{0}, \sigma^2_{0}) \\
+p(\sigma^2_{k}) &= \text{inverse-gamma}(A, B)
+\end{align*}
+
+\newpage
+
+### Posterior
+\begin{align*}
+p(\boldsymbol{\mu}, \boldsymbol{\sigma^2}, \mathbf{w}, \{\mathbf{z}_b\}_{b=1}^B \mid \mathbf{y}) 
+&\propto \prod_{i=1}^N \prod_{b=1}^B \prod_{k=1}^{\infty} p(y_i \mid \mu_k, \sigma_k^2)^{w_{ib} z_{ibk}} p(z_{ibk} \mid \mathbf{w}, \boldsymbol{p}_b) p(w_{ib} \mid \boldsymbol{\phi})p(p_{bk})p(\phi_b)p(\mu_k)p(\sigma^2_k)
+\end{align*}
+
+### Full Conditionals
+\begin{align*}
+p(w_{ib} = 1 \mid \cdot) &\propto \phi_{b} \prod_{k=1}^{\infty} p_{bk} N(y_i \mid \mu_{k}, \sigma^2_k) \quad \text{for} \quad b=1,2, \dots, B, \quad i=1,2, \dots, N \\
+p(z_{ibk} = 1 \mid \cdot) &\propto p_{bk} N(y_i \mid \mu_{k}, \sigma^2_k) \prod_{b=1}^{B} \phi_{b} \quad \text{for} \quad k=1,2, \dots, \infty, \quad i=1,2, \dots, N \\
+p(V_{bk} \mid \cdot ) &= \text{Beta}\Big{(}1 + n_{bk}, \beta + \sum_{j=k+1}^{\infty} n_{bj} \Big{)} \quad \text{where} \quad n_{bk} = \sum_{i=1}^N z_{ibk} w_{ib} \quad k=1,2, \dots \\
+p(\boldsymbol{\phi} \mid \cdot) &= \text{Dirichlet}(\boldsymbol{\alpha}) \quad \alpha_j = \alpha_{\phi_j} + \sum_{i=1}^N y_i w_{ib} \\
+p(\mu_k \mid \cdot) &= N(a^{-1}b, a^{-1}) \quad \text{where} \quad a = \frac{1}{\sigma^2_0} + \frac{\sum_{b=1}^B n_{bk}}{\sigma^2_k} \quad \text{and} \quad b = \frac{\mu_0}{\sigma^2_0} + \frac{\sum_{i=1}^N \sum_{b=1}^B y_i z_{ibk}w_{ib} }{\sigma^2_k} \quad k = 1,2, \dots \\
+p(\sigma^2_k \mid \cdot) &= \text{inverse-gamma}\Big{(} A + \frac{\sum_{b=1}^B n_{bk}}{2}, B + \frac{\sum_{i=1}^N \sum_{b=1}^B (y_i - \mu_k)^2 z_{ibk}w_{ib}}{2} \Big{)} \quad k = 1,2, \dots
+\end{align*}
+
+### Optimal Densities
+The optimal densities are given by
+\begin{align*}
+q^*_i(\theta_i) \propto \text{exp}\{E_{-\theta_i} \log p(\theta_i \mid \cdot)\}.
+\end{align*}
+
+#### Optimal density for $w_{ib}$
+\begin{align*}
+\log q^*_{w}(w_{ib}) &\propto E_{\boldsymbol{\phi}, \mu_k, \sigma^2_k} \log p(w_{ik} = 1 \mid \cdot) \\
+&= E_{\boldsymbol{\phi}}[\log \phi_b] + \sum_{k=1}^{\infty} \big{[} E_{\mathbf{p}}[\log p_{bk}] - \frac{1}{2}\log(2\pi) - \frac{1}{2} E_{\sigma^2_k}[\log \sigma^2_k] - \frac{1}{2 E_{\sigma^2_k}[ \sigma^2_k]} E_{\mu_k}[(y_i - \mu_k)^2] \big{]} \\
+&= \log \tilde{\phi}_{ib_{q(\phi)}}
+\end{align*}
+It follows that
+\begin{align*}
+ q^*_{w}(w_i) = \text{categorical}(\boldsymbol{\phi}_{q(\phi)}) \quad \text{where} \quad \phi_{ib_{q(\phi)}} = \frac{\tilde{\phi}_{ib_{q(\phi)}}}{\sum_{b=1}^{B} \tilde{\phi}_{ib_{q(\phi)}}}
+\end{align*}
+
+#### Optimal density for $z_{ibk}$
+\begin{align*}
+\log q^*_{z}(z_{ibk}) &\propto E_{\boldsymbol{p}, \mu_k, \sigma^2_k} \log p(z_{ibk} = 1 \mid \cdot) \\
+&= E_{\mathbf{p}}[\log p_{bk}] - \frac{1}{2}\log(2\pi) - \frac{1}{2} E_{\sigma^2_k}[\log \sigma^2_k] - \frac{1}{2 E_{\sigma^2_k}[ \sigma^2_k]} E_{\mu_k}[(y_i - \mu_k)^2] + \sum_{b=1}^B E_{\boldsymbol{\phi}} \log(\phi_b) \\
+&= \log \tilde{p}_{ibk_{q(p)}}
+\end{align*}
+It follows that
+\begin{align*}
+ q^*_{z}(z_{ib}) = \text{categorical}(\boldsymbol{p}_{q(p)}) \quad \text{where} \quad p_{ibk_{q(p)}} = \frac{\tilde{p}_{ibk_{q(p)}}}{\sum_{k=1}^{\infty} \tilde{p}_{ibk_{q(p)}}}
+\end{align*}
+
+#### Optimal density for $V_{bk}$
+\begin{align*}
+q^*_{V}(V_{bk}) = \text{Beta}\Big{(}\alpha_{q(V_{bk})}, \beta_{q(V_{bk})} \Big{)} \quad \text{where} \quad \alpha_{q(V_{bk})} = 1 + E_{w, z}[n_{bk}], \quad \beta_{q(V_{bk})} =  \beta + \sum_{j = k+1}^{\infty} E_{w,z}[n_{bj}]
+\end{align*}
+
+#### Optimal density for $\phi$
+\begin{align*}
+q^*_{\phi}(\phi) = \text{Dirichlet}(\boldsymbol{\alpha}_{q(\phi)}) \quad \text{where} \quad \alpha_{q(\phi_j)} = \alpha_{\phi_j} + \sum_{i=1}^N y_i E_w[w_{ib}]
+\end{align*}
+
+#### Optimal density for $\mu_k$
+\begin{align*}
+q^*_{\mu_{k}}(\mu_{k}) &= N(\mu_{q(\mu_k)}, \sigma^2_{q(\mu_k)}) \\
+\sigma^2_{q(\mu_k)} &= \Big{(}\frac{1}{\sigma^2_0} + \frac{E_{w,z}[n_{bk}]}{E_{\sigma^2_k} [\sigma^2_k]} \Big{)}^{-1} \\
+\mu_{q(\mu_k)} &= \sigma^2_{q(\mu_k)} * \Big{(} \frac{\mu_0}{\sigma^2_0} + \frac{\sum_{i=1}^N \sum_{b=1}^B y_i E_{z}[z_{ibk}]E_{w}[w_{ib}]}{E_{\sigma^2_k} [\sigma^2_k]}\Big{)}
+\end{align*}
+
+#### Optimal density for $\sigma^2_k$
+\begin{align*}
+q^*_{\sigma^2_{k}}(\sigma^2_{k}) &= \text{inverse-gamma}\Big{(} A_{q(\sigma^2_k)}, B_{q(\sigma^2_k)} \Big{)} \\
+A_{q(\sigma^2_k)} &= A + \frac{E_{w,z}[n_{bk}]}{2}, \\ 
+B_{q(\sigma^2_k)} &= B + \frac{\sum_{i=1}^N \sum_{b=1}^B E_{w, z, \mu_k}[(y_i - \mu_k)^2 z_{ibk}w_{ib}]}{2}
+\end{align*}
+
+#### Expectations
+\begin{align*}
+E_{\phi}[\log \phi_b] &= \psi(\alpha_{q(\phi_b)}) + \psi\Big{(}\sum_{b=1}^B \alpha_{q(\phi_b)}\Big{)} \\
+E_{p}[\log p_{bk}] &= E_{V}[\log V_{bk}] + \sum_{j=1}^{k-1} E_{V}[\log (1 - V_{bj})] \\
+&= \psi(\alpha_{q(V_{bk})}) - \psi(\alpha_{q(V_{bk})} + \beta_{q(V_{bk})}) +  \sum_{j=1}^{k-1} [\psi(\beta_{q(V_{bj})}) - \psi(\alpha_{q(V_{bj})} + \beta_{q(V_{bj})})] \\
+E_{\sigma^2_k}[\log \sigma^2_k] &= \log(B_{q(\sigma^2_k)}) - \psi(A_{q(\sigma^2_k)}) \\
+E_{\sigma^2_k}[\sigma^2_k] &= \frac{B_{q(\sigma^2_k)}}{A_{q(\sigma^2_k)}} \\
+E_{\mu_k}[\mu_k] &= \mu_{q(\mu_k)} \\
+E_{\mu_k}[(y_i - \mu_k)^2] &= (y_i - \mu_{q(\mu_k)})^2 + \sigma^2_{q(\mu_k)}
+\end{align*}
+

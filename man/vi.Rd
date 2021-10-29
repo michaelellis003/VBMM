@@ -7,11 +7,11 @@
 vi(
   y,
   K = 20,
-  mu0 = 0,
+  mu0 = 1,
   sigmasq0 = 10^8,
   A = 0.01,
   B = 0.01,
-  beta = 0.5,
+  beta0 = 0.5,
   max_iter = 30
 )
 }
