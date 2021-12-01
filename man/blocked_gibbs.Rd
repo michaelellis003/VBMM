@@ -2,7 +2,7 @@
 % Please edit documentation in R/blocked_gibbs.R
 \name{blocked_gibbs}
 \alias{blocked_gibbs}
-\title{Bloack Gibbs Sampler for Infinite Gaussian Mixture Model}
+\title{Blocked Gibbs Sampler for Infinite Gaussian Mixture Model}
 \usage{
 blocked_gibbs(
   y,
@@ -24,5 +24,5 @@ blocked_gibbs(
 
 }
 \description{
-Bloack Gibbs Sampler for Infinite Gaussian Mixture Model
+Blocked Gibbs Sampler for Infinite Gaussian Mixture Model
 }

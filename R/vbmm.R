@@ -3,13 +3,9 @@
 #' @param y
 #' @param B
 #' @param K
-#' @param mu0
-#' @param sigmasq0
-#' @param A
-#' @param B
-#' @param alpha_phi0
-#' @param beta_V0
 #' @param max_iter
+#' @param prior_parameters
+#' @param initial_values
 #'
 #' @return
 #' @export
@@ -19,110 +15,88 @@ vbmm <- function(
     y,
     B = 2,
     K = 20,
-    mu0 = 0,
-    sigmasq0 = 10^8,
-    A0 = 0.01,
-    B0 = 0.01,
-    alpha_phi0 = 1,
-    beta_V0 = 0.5,
-    max_iter = 30
+    max_iter = 30,
+    prior_parameters = NULL,
+    initial_values = NULL
 ) {
 
     N <- length(y) # sample size
-    elbos <- rep(-Inf, max_iter)
     y_mat <- matrix(rep(y, K), nrow = N, ncol = K)
+    mod <- list(
+        y = y_mat,
+        N = N,
+        B = B,
+        K = K
+    )
+    elbos <- rep(-Inf, max_iter)
 
-    ## storing parameters
-    alpha_q_phi <- rep(alpha_phi0, B)
+    # get prior parameters
+    if(is.null(prior_parameters)) {
+        prior_parameters <- default_priors()
+    }
 
-    alpha_q_V <- matrix(1, nrow = (K-1), ncol = B)
-    beta_q_V <- matrix(beta_V0, nrow = (K-1), ncol = B)
+    # initialize variational parameters
+    variational_parameters <-
+        update_variational_parameters(mod,
+                                      variational_parameters = NULL,
+                                      expectations = NULL,
+                                      prior_parameters = prior_parameters,
+                                      initialize = TRUE,
+                                      initial_values = initial_values)
 
-    mu_q_mu <- rnorm(K, mean = mean(y), sd = sd(y))
-    sigmasq_q_mu <- 1/rgamma(K, 1, 1)
+    # calculate initial expectations
+    expected_values <- update_expectations(mod,
+                                           variational_parameters = variational_parameters)
 
-    A_q_sigmasq <- rep(1, K)
-    B_q_sigmasq <- rep(1, K)
-
-    phi_q_phi <- matrix(0, nrow = N, ncol = B)
-
-
-    ## Calculate initial expectations
-    E_n <- matrix(NA, nrow = K, ncol = B)
-    E_log_phi = digamma(alpha_q_phi) + digamma(sum(alpha_q_phi)) # E[log \phi_b]
-    E_sigma_sq <- B_q_sigmasq/A_q_sigmasq # E[sigma^2_k]
-    E_log_sigma_sq <- log(B_q_sigmasq) - digamma(A_q_sigmasq) # E[log sigma^2_k]
-    E_SS <- t(apply(y_mat, 1, function(x) (x-mu_q_mu)^2 + sigmasq_q_mu)) # E[(y - mu_k)^2]
-    E_log_p <- stick_breaking_expectation(B, K, alpha_q_V, beta_q_V) #E[log p_bk]
-
-    for(m in 1:max_iter) {
-
-        ## optimal density for w_ib
-        phi_q_phi <- update_phi(y, N, B, K, E_log_phi, E_log_p, E_sigma_sq,
-                              E_log_sigma_sq, E_SS)
-
-
-        ## optimal density for z_ibk
-        p_q_p <- update_p(y, N, B, K, E_log_phi, E_log_p, E_sigma_sq, E_log_sigma_sq, E_SS)
-
-        # a count of expected observations in each parent and child cluster
-        for(b in 1:B) {
-            E_n[, b] <- t(phi_q_phi[, b] %*% p_q_p[[b]])
+    for(i in 1:max_iter) {
+        if(i %% 100 == 0) {
+            message("Iteration ", i, " of ", max_iter)
         }
 
-        E_w_n <- colSums(E_n) # a count of observations in each parent cluster
-        E_z_n <- rowSums(E_n) # a count of observations in each child cluster
+        ## update variational parameters
+        variational_parameters <-
+            update_variational_parameters(mod,
+                                          variational_parameters = variational_parameters,
+                                          expectations = expected_values,
+                                          prior_parameters = prior_parameters,
+                                          initialize = FALSE,
+                                          initial_values = NULL)
 
-        for(k in 1:K){
+        print(round(colMeans(variational_parameters$phi_w), 2))
+        print(round(colMeans(variational_parameters$p_z[, 1, ]), 2))
+        print(round(colMeans(variational_parameters$p_z[, 2, ]), 2))
 
-            ## optimal density for V_bk
-            for(b in 1:B) {
-                if(k < K) {
-                    alpha_q_V[k, b] <- 1 + E_n[k, b]
-                    beta_q_V[k, b] <- beta_V0 + sum(E_n[(k+1):K, b])
-                }
-            }
+        if(all(round(colMeans(variational_parameters$phi_w), 2) == c(1,1))) {
 
-            ## optimal density for \phi
-            for(b in 1:B) {
-                alpha_q_phi[b] <- alpha_phi0 + sum(y * phi_q_phi[, b])
-            }
+            return(
+                list(
+                    mod = mod,
+                    variational_parameters = variational_parameters,
+                    expected_values = expected_values,
+                    elbos = elbos
+                )
+            )
 
-            ## optimal density for mu_k
-            wts <- phi_q_phi[, 1] * p_q_p[[1]][, k]
-            for(b in 1:B) {
-                wts <- wts + phi_q_phi[, b] * p_q_p[[b]][, k]
-            }
-
-            sigmasq_q_mu[k] <- 1/(1/sigmasq0 + (1/E_sigma_sq[k])*E_z_n[k])
-            mu_q_mu[k] <- sigmasq_q_mu[k]*(mu0/sigmasq0 + (1/E_sigma_sq[k])*sum(y*wts))
-
-            ## optimal density for sigma^2_k
-            A_q_sigmasq[k] <- A0 + E_z_n[k]/2
-            B_q_sigmasq[k] <- B0 + (1/2)*(sum(((y - mu_q_mu[k])^2 + sigmasq_q_mu[k])*wts))
         }
 
-        ## update expectations
-        E_log_phi = digamma(alpha_q_phi) + digamma(sum(alpha_q_phi)) # E[log \phi_b]
-        E_sigma_sq <- B_q_sigmasq/A_q_sigmasq # E[sigma^2_k]
-        E_log_sigma_sq <- log(B_q_sigmasq) - digamma(A_q_sigmasq) # E[log sigma^2_k]
-        E_SS <- t(apply(y_mat, 1, function(x) (x-mu_q_mu)^2 + sigmasq_q_mu)) # E[(y - mu_k)^2]
-        E_log_p <- stick_breaking_expectation(B, K, alpha_q_V, beta_q_V) #E[log p_bk]
+        ## update expected values
+        expected_values <- update_expectations(mod,
+                                               variational_parameters = variational_parameters)
+
+        ## update elbo
+        elbos[i] <- elbo(mod,
+                         variational_parameters,
+                         expectations = expected_values,
+                         prior_parameters)
+
     }
 
     return(
         list(
-            phi_q_phi = phi_q_phi,
-            p_q_p = p_q_p,
-            alpha_q_V = alpha_q_V,
-            beta_q_V = beta_q_V,
-            mu_q_mu = mu_q_mu,
-            sigmasq_q_mu = sigmasq_q_mu,
-            A_q_sigmasq = A_q_sigmasq,
-            B_q_sigmasq = B_q_sigmasq,
-            alpha_q_phi = alpha_q_phi,
+            mod = mod,
+            variational_parameters = variational_parameters,
+            expected_values = expected_values,
             elbos = elbos
         )
     )
-
 }
