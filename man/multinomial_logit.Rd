@@ -4,10 +4,10 @@
 \alias{multinomial_logit}
 \title{Title}
 \usage{
-multinomial_logit(phi_tilde)
+multinomial_logit(log_prob_tilde)
 }
 \arguments{
-\item{phi_tilde}{}
+\item{log_prob_tilde}{}
 }
 \value{
 

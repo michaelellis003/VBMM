@@ -39,16 +39,16 @@ p(\sigma^2_{k}) &= \text{inverse-gamma}(A, B)
 
 ### Posterior
 \begin{align*}
-p(\boldsymbol{\mu}, \boldsymbol{\sigma^2}, \mathbf{w}, \{\mathbf{z}_b\}_{b=1}^B \mid \mathbf{y}) 
+p(\boldsymbol{\mu}, \boldsymbol{\sigma^2}, \mathbf{w}, \{\mathbf{z}_b\}_{b=1}^B, \boldsymbol{\phi}, \{\mathbf{p}_b\}_{b=1}^B \mid \mathbf{y}) 
 &\propto \prod_{i=1}^N \prod_{b=1}^B \prod_{k=1}^{\infty} p(y_i \mid \mu_k, \sigma_k^2)^{w_{ib} z_{ibk}} p(z_{ibk} \mid \mathbf{w}, \boldsymbol{p}_b) p(w_{ib} \mid \boldsymbol{\phi})p(p_{bk})p(\phi_b)p(\mu_k)p(\sigma^2_k)
 \end{align*}
 
 ### Full Conditionals
 \begin{align*}
 p(w_{ib} = 1 \mid \cdot) &\propto \phi_{b} \prod_{k=1}^{\infty} p_{bk} N(y_i \mid \mu_{k}, \sigma^2_k) \quad \text{for} \quad b=1,2, \dots, B, \quad i=1,2, \dots, N \\
-p(z_{ibk} = 1 \mid \cdot) &\propto p_{bk} N(y_i \mid \mu_{k}, \sigma^2_k) \prod_{b=1}^{B} \phi_{b} \quad \text{for} \quad k=1,2, \dots, \infty, \quad i=1,2, \dots, N \\
+p(z_{ibk} = 1 \mid \cdot) &\propto p_{bk} N(y_i \mid \mu_{k}, \sigma^2_k) \phi_{b} \quad \text{for} \quad k=1,2, \dots, \infty, \quad i=1,2, \dots, N \\
 p(V_{bk} \mid \cdot ) &= \text{Beta}\Big{(}1 + n_{bk}, \beta + \sum_{j=k+1}^{\infty} n_{bj} \Big{)} \quad \text{where} \quad n_{bk} = \sum_{i=1}^N z_{ibk} w_{ib} \quad k=1,2, \dots \\
-p(\boldsymbol{\phi} \mid \cdot) &= \text{Dirichlet}(\boldsymbol{\alpha}) \quad \alpha_j = \alpha_{\phi_j} + \sum_{i=1}^N y_i w_{ib} \\
+p(\boldsymbol{\phi} \mid \cdot) &= \text{Dirichlet}(\boldsymbol{\alpha}) \quad \alpha_j = \alpha_{\phi_j} + \sum_{i=1}^N w_{ib} \\
 p(\mu_k \mid \cdot) &= N(a^{-1}b, a^{-1}) \quad \text{where} \quad a = \frac{1}{\sigma^2_0} + \frac{\sum_{b=1}^B n_{bk}}{\sigma^2_k} \quad \text{and} \quad b = \frac{\mu_0}{\sigma^2_0} + \frac{\sum_{i=1}^N \sum_{b=1}^B y_i z_{ibk}w_{ib} }{\sigma^2_k} \quad k = 1,2, \dots \\
 p(\sigma^2_k \mid \cdot) &= \text{inverse-gamma}\Big{(} A + \frac{\sum_{b=1}^B n_{bk}}{2}, B + \frac{\sum_{i=1}^N \sum_{b=1}^B (y_i - \mu_k)^2 z_{ibk}w_{ib}}{2} \Big{)} \quad k = 1,2, \dots
 \end{align*}
@@ -73,7 +73,7 @@ It follows that
 #### Optimal density for $z_{ibk}$
 \begin{align*}
 \log q^*_{z}(z_{ibk}) &\propto E_{\boldsymbol{p}, \mu_k, \sigma^2_k} \log p(z_{ibk} = 1 \mid \cdot) \\
-&= E_{\mathbf{p}}[\log p_{bk}] - \frac{1}{2}\log(2\pi) - \frac{1}{2} E_{\sigma^2_k}[\log \sigma^2_k] - \frac{1}{2 E_{\sigma^2_k}[ \sigma^2_k]} E_{\mu_k}[(y_i - \mu_k)^2] + \sum_{b=1}^B E_{\boldsymbol{\phi}} \log(\phi_b) \\
+&= E_{\mathbf{p}}[\log p_{bk}] - \frac{1}{2}\log(2\pi) - \frac{1}{2} E_{\sigma^2_k}[\log \sigma^2_k] - \frac{1}{2 E_{\sigma^2_k}[ \sigma^2_k]} E_{\mu_k}[(y_i - \mu_k)^2] + E_{\boldsymbol{\phi}} [\log(\phi_b)] \\
 &= \log \tilde{p}_{ibk_{q(p)}}
 \end{align*}
 It follows that
@@ -88,7 +88,7 @@ q^*_{V}(V_{bk}) = \text{Beta}\Big{(}\alpha_{q(V_{bk})}, \beta_{q(V_{bk})} \Big{)
 
 #### Optimal density for $\phi$
 \begin{align*}
-q^*_{\phi}(\phi) = \text{Dirichlet}(\boldsymbol{\alpha}_{q(\phi)}) \quad \text{where} \quad \alpha_{q(\phi_j)} = \alpha_{\phi_j} + \sum_{i=1}^N y_i E_w[w_{ib}]
+q^*_{\phi}(\phi) = \text{Dirichlet}(\boldsymbol{\alpha}_{q(\phi)}) \quad \text{where} \quad \alpha_{q(\phi_j)} = \alpha_{\phi_j} + \sum_{i=1}^N E_w[w_{ib}]
 \end{align*}
 
 #### Optimal density for $\mu_k$
@@ -115,4 +115,33 @@ E_{\sigma^2_k}[\sigma^2_k] &= \frac{B_{q(\sigma^2_k)}}{A_{q(\sigma^2_k)}} \\
 E_{\mu_k}[\mu_k] &= \mu_{q(\mu_k)} \\
 E_{\mu_k}[(y_i - \mu_k)^2] &= (y_i - \mu_{q(\mu_k)})^2 + \sigma^2_{q(\mu_k)}
 \end{align*}
+
+### ELBO
+For a set of observations $\mathbf{y} = y_{1:N}$ and latent variables $\mathbf{z} = z_{1:m}$ the evidence lower bound (ELBO) is given by
+\begin{align*}
+\text{ELBO}(q) = E[\log p(\mathbf{y}, \mathbf{z})] - E[\log q(\mathbf{z})].
+\end{align*}
+
+In our case,
+\begin{equation*}
+\begin{split}
+\text{ELBO}(q) &= E[\log p(\mathbf{y}, \boldsymbol{\mu}, \boldsymbol{\sigma^2}, \mathbf{w}, \{\mathbf{z}_b\}_{b=1}^B, \boldsymbol{\phi}, \{\mathbf{p}_b\}_{b=1}^B)] - E[\log q(\boldsymbol{\mu}, \boldsymbol{\sigma^2}, \mathbf{w}, \{\mathbf{z}_b\}_{b=1}^B, \boldsymbol{\phi}, \{\mathbf{p}_b\}_{b=1}^B)] \\
+&= E\Big{[}\log p(\mathbf{y} \mid \mathbf{w}, \mathbf{z}, \boldsymbol{u}, \boldsymbol{\sigma^2})\Big{]} + E\Big{[}\log p(\mathbf{z} \mid \mathbf{w}, \boldsymbol{p}) \Big{]} + E\Big{[}\log p(\mathbf{w} \mid \boldsymbol{\phi}) \Big{]} + E\Big{[}\log p(\boldsymbol{\mu} \mid \boldsymbol{\sigma^2}) \Big{]} + \\ &E\Big{[}\log p(\boldsymbol{\sigma^2}) \Big{]} + E\Big{[}\log p(\boldsymbol{p}) \Big{]} + E\Big{[}\log p(\boldsymbol{\phi}) \Big{]} - E\Big{[}\log q(\mathbf{z}) \Big{]} - E\Big{[}\log q(\mathbf{w}) \Big{]} - \\ 
+&- E\Big{[}\log q(\mathbf{p}) \Big{]} - E\Big{[}\log q(\boldsymbol{\phi}) \Big{]} - E\Big{[}\log q(\boldsymbol{\mu} \mid \boldsymbol{\sigma^2}) \Big{]} - E\Big{[}\log q(\boldsymbol{\sigma^2}) \Big{]}
+\end{split}
+\end{equation*}
+
+\begin{align*}
+E\Big{[}\log p(\mathbf{y} \mid \mathbf{w}, \mathbf{z}, \boldsymbol{u}, \boldsymbol{\sigma^2})\Big{]} &= \sum_{i=1}^N \sum_{b=1}^B E[w_{ib}] \sum_{k=1}^{\infty} E[Z_{ibk}]\Big{[}-\frac{1}{2}\log(2 \pi) - \frac{1}{2}E[\log(\sigma^2_k)] - \frac{1}{2 E[\log \sigma^2_k]}E[(y_i - \mu_k)^2]\Big{]} \\
+E\Big{[}\log p(\mathbf{z} \mid \mathbf{w}, \boldsymbol{p}) \Big{]} &= \sum_{i=1}^N \sum_{b=1}^B  \sum_{k=1}^{\infty} E[z_{ibk}] E[\log p_{bk}] \\
+E\Big{[}\log p(\mathbf{w} \mid \boldsymbol{\phi}) \Big{]} &= \sum_{i=1}^N \sum_{b=1}^B E[w_{ib}] E[\log \phi_b] \\
+E\Big{[}\log p(\boldsymbol{\mu} \mid \boldsymbol{\sigma^2}) \Big{]} &= \sum_{k=1}^{\infty} -\frac{1}{2}\log(2 \pi) - \frac{1}{2}E[\log(\sigma^2_k)] - \frac{1}{2 E[\log \sigma^2_k]}E[(\mu_k - \mu_0)^2] \\
+E\Big{[}\log p(\boldsymbol{\sigma^2}) \Big{]} &= \sum_{k=1}^{\infty} A_0 \log B_0 - \log \Gamma(A_0) + (A_0 + 1)\frac{1}{E[\log \sigma^2_k]} - \frac{B_0}{E[\sigma^2_k]} \\
+E\Big{[}\log p(\boldsymbol{p}) \Big{]} &= \sum_{b=1}^B \sum_{k=1}^{\infty} \log \Gamma(1 + \beta_b) - \log \Gamma(\beta_b) + (\beta_b-1)E[\log(1 - V_{bk})] + \\ &\sum_{k=1}^{K-1} \log \Gamma(1 + \beta_b) - \log \Gamma(\beta_b) + (\beta_b-1)E[\log (1 - V_{bk})] \\
+E\Big{[}\log p(\boldsymbol{\phi}) \Big{]} &= \log \Gamma(\sum_{b=1}^B \alpha_{\phi b}) - \sum_{b=1}^B \log \Gamma(\alpha_{\phi b}) + \sum_{b=1}^B (\alpha_{\phi b} - 1)E[\log \phi_b] \\
+E[q(\mathbf{z})] &= \sum_{i=1}^N \sum_{b=1}^{B} \sum_{k=1}^{\infty} E[z_{ibk}] \log p_{ibk} \\
+E[ \log q(\mathbf{w}) ] &= \sum_{i=1}^N \sum_{b=1}^B E[w_{ib}] \log \phi_{ib} \\
+E[ \log q(\boldsymbol{\phi}) ] &= \log \Gamma(\sum_{b=1}^B \alpha_{q(\phi)b}) - \sum_{b=1}^B \log \Gamma(\alpha_{q(\phi)b}) + \sum_{b=1}^B (\alpha_{q(\phi)b} - 1)E[\log \phi_b]
+\end{align*}
+
 

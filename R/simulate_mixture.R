@@ -22,16 +22,14 @@ simulate_mixture <- function(
     p = list(c(1/3, 1/3, 1/3), c(1/2, 1/4, 1/4))
 ) {
 
-    sample_parents <- sample(1:B, size = N, replace = TRUE, prob = phi)
-    y <- list()
+    z <- rep(NA, N)
+    w <- sample(1:B, size = N, replace = TRUE, prob = phi)
+    y <- rep(0, N)
 
-    for(b in 1:B) {
-        Nb <- sum(sample_parents == b)
-        sample_clusters <- sample(1:K, size = Nb, replace = TRUE, prob = p[[b]])
-        y[[b]] <- rnorm(Nb, mean = mu[sample_clusters], sd = sqrt(sigmasq[sample_clusters]))
+    for(i in 1:N) {
+        z[i] <- sample(1:K, size = 1, replace = TRUE, prob = p[[w[i]]])
+        y[i] <- rnorm(1, mean = mu[z[i]], sd = sqrt(sigmasq[z[i]]))
     }
-
-    y <- unlist(y)
 
     return(
         list(
@@ -42,7 +40,9 @@ simulate_mixture <- function(
             mu = mu,
             sigmasq = sigmasq,
             phi = phi,
-            p = p
+            p = p,
+            w = w,
+            z = z
         )
     )
 }

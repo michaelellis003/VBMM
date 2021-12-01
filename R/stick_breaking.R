@@ -22,6 +22,7 @@ stick_breaking <- function(V, K) {
             pi[k] <- stick_prob
         }
     }
+    pi[K] = 1 - sum(pi[1:(K-1)])
 
     return(pi)
 }

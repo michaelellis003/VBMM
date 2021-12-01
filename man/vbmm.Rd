@@ -8,17 +8,13 @@ vbmm(
   y,
   B = 2,
   K = 20,
-  mu0 = 0,
-  sigmasq0 = 10^8,
-  A0 = 0.01,
-  B0 = 0.01,
-  alpha_phi0 = 1,
-  beta_V0 = 0.5,
-  max_iter = 30
+  max_iter = 30,
+  prior_parameters = NULL,
+  initial_values = NULL
 )
 }
 \arguments{
-\item{max_iter}{}
+\item{initial_values}{}
 }
 \value{
 
