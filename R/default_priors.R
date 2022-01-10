@@ -9,7 +9,7 @@ default_priors <- function() {
     return(
         list(
             mu_prior_mu = 0,
-            sigmasq_prior_mu = 10^8,
+            sigmasq_prior_mu = 10^2,
             shape_prior_sigmasq = 0.01,
             scale_prior_sigmasq = 0.01,
             shape1_prior_V = 1,
