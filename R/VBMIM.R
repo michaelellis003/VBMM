@@ -88,24 +88,23 @@ VBMIM <- function(
         }
 
         ## optimal density for w_ik
-        # for (b in 1:B) {
-        #     for (k in 1:K) {
-        #         dens_phi_q_phi[b, , k] <- E_pi_k -
-        #             (1/2)*(digamma(A_q_sigmasq[k]) + log(B_q_sigmasq[k]) +
-        #                        (1/E_sigma_sq)*((y-mu_q_mu[k])^2 + sigmasq_q_mu[k]))
-        #     }
-        #     tilde_phi_q_phi[, b] <- digamma(alpha_q_phi[b]) + digamma(sum(alpha_q_phi)) +
-        #         rowSums(dens_phi_q_phi[b, , ])
-        # }
-        #
-        # phi_q_phi <- multinomial_logit(tilde_phi_q_phi)
+        for (b in 1:B) {
+            for (k in 1:K) {
+                dens_phi_q_phi[b, , k] <- E_pi_k -
+                    (1/2)*(digamma(A_q_sigmasq[k]) + log(B_q_sigmasq[k]) +
+                               (1/E_sigma_sq)*((y-mu_q_mu[k])^2 + sigmasq_q_mu[k]))
+            }
+            tilde_phi_q_phi[, b] <- digamma(alpha_q_phi[b]) + digamma(sum(alpha_q_phi)) +
+                rowSums(dens_phi_q_phi[b, , ])
+        }
+
+        phi_q_phi <- multinomial_logit(tilde_phi_q_phi)
 
         # expected count of observations in each w and z cluster
         E_n <- matrix(NA, nrow = K, ncol = B)
         for(b in 1:B) {
             for(k in 1:K) {
-                #E_n[k, b] <- sum(pi_q_pi[b, , k] * phi_q_phi[, b])
-                E_n[k, b] <- sum(w==b)*sum(pi_q_pi[b, , k])
+                E_n[k, b] <- sum(pi_q_pi[b, , k] * phi_q_phi[, b])
             }
         }
 
@@ -114,10 +113,7 @@ VBMIM <- function(
 
         ## optimal density for \phi
         for(b in 1:B) {
-            # alpha_q_phi[b] <- 1 +
-            #     sum(phi_q_phi[, b])
-            alpha_q_phi[b] <- 1 +
-                sum(w==b)
+            alpha_q_phi[b] <- 1 + sum(phi_q_phi[, b])
         }
 
         wts <- matrix(0, nrow = N, ncol = K)
@@ -140,8 +136,8 @@ VBMIM <- function(
             mu_q_mu[k] <- sigmasq_q_mu[k]*(mu0/sigmasq0 + (1/E_sigma_sq[k])*sum(y*wts[, k]))
 
             ## optimal density for sigma^2_k
-            A_q_sigmasq[k] <- A + E_z_n[k]/2
-            B_q_sigmasq[k] <- B + (1/2)*(sum(((y - mu_q_mu[k])^2 + sigmasq_q_mu[k])*wts[, k]))
+            A_q_sigmasq[k] <- A0 + E_z_n[k]/2
+            B_q_sigmasq[k] <- B0 + (1/2)*(sum(((y - mu_q_mu[k])^2 + sigmasq_q_mu[k])*wts[, k]))
         }
 
     }
