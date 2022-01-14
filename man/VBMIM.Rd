@@ -4,17 +4,7 @@
 \alias{VBMIM}
 \title{Title}
 \usage{
-VBMIM(
-  y,
-  B = 2,
-  K = 20,
-  mu0 = 0,
-  sigmasq0 = 10^2,
-  A0 = 0.01,
-  B0 = 0.01,
-  beta = 0.5,
-  max_iter = 30
-)
+VBMIM(y, w, B = 2, K = 20, prior_parameters = NULL, max_iter = 30)
 }
 \arguments{
 \item{max_iter}{}

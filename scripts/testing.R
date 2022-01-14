@@ -2,7 +2,7 @@ library(VBMM)
 library(tidyverse)
 
 mix <- simulate_mixture(
-    N = 10000,
+    N = 5000,
     B = 2,
     K = 3,
     mu = c(-20, 10, 35),
@@ -18,14 +18,34 @@ ggplot(df) +
     facet_wrap(~w)
 
 y <- mix$y
+w <- mix$w
 
+B <- 2
+K <- 20
 iter <- 2000
 output <- VBMIM(
     y,
-    B = 2,
-    K = 20,
+    w,
+    B,
+    K,
     max_iter = iter
 )
+
+x <- seq(-40, 60, length.out = 1000)
+for(b in 1:B) {
+
+    preds <- matrix(0, nrow = length(x), ncol = 20)
+    for (k in 1:20) {
+        preds[, k] <- colMeans(output$pi_q_pi[b, , ])[k]*dnorm(x, output$mu_q_mu[k], sqrt(sigma_sq[k]))
+    }
+    matplot(x, preds, type = "l", lty = 1)
+}
+
+
+
+
+x <- seq(-40, 60, length.out = 1000)
+
 
 round(output$mu_q_mu, 2)
 round(output$sigmasq_q_mu, 3)
@@ -33,20 +53,32 @@ round(output$sigmasq_q_mu, 3)
 sigma_sq <- output$B_q_sigmasq/output$A_q_sigmasq
 round(output$B_q_sigmasq/output$A_q_sigmasq, 2)
 
-round(colMeans(output$phi_q_phi), 2)
+round(output$alpha_q_phi/sum(output$alpha_q_phi), 2)
 round(colMeans(output$pi_q_pi[1, , ]), 2)
 round(colMeans(output$pi_q_pi[2, , ]), 2)
 
-x <- seq(-40, 60, length.out = 1000)
-dat <- matrix(0, nrow = length(x), ncol = 20)
-for (k in 1:K) {
-    dat[, k] <- colMeans(output$pi_q_pi[1, , ])[k]*dnorm(x, output$mu_q_mu[k], sqrt(sigma_sq[k]))
-}
-matplot(x, dat, type = "l", lty = 1)
+elbo_df <- data.frame(
+    iteration = 1:iter,
+    elbos = output$elbos
+)
 
-x <- seq(-40, 60, length.out = 1000)
-dat_true <- matrix(0, nrow = length(x), ncol = 3)
-for (k in 1:3) {
-    dat_true[, k] <- c(1/3, 1/3, 1/3)[k]*dnorm(x, c(-20, 10, 35)[k], sqrt(c(0.5, 0.5, 0.5)[k]))
-}
-matplot(x, dat_true, type = "l", add = T, lty = 2)
+ggplot(elbo_df, aes(x = iteration, y = elbos)) +
+    geom_point() +
+    geom_line()
+
+
+
+
+## mcmc ------------------------------------------------------------------------
+n_mcmc <- 5000
+burnin <- 2500
+output_mcmc <- mcmc(
+    y,
+    w,
+    B = 2,
+    K = 20,
+    n_mcmc,
+    burnin,
+    n_message = 500,
+    prior_parameters = NULL
+)
