@@ -1,6 +1,8 @@
-#' Blocked Gibbs Sampler for Infinite Gaussian Mixture Model
+#' Title
 #'
 #' @param y
+#' @param w
+#' @param B
 #' @param K
 #' @param lambda0
 #' @param mu0
@@ -15,8 +17,10 @@
 #' @export
 #'
 #' @examples
-blocked_gibbs <- function(
+mcmc_old <- function(
     y,
+    w,
+    B = 2,
     K = 20,
     lambda0 = 0.1,
     mu0 = 0,

@@ -15,7 +15,7 @@ log_normal_dens <- function(
 ) {
 
     return(
-        (1/2)*(log(2*pi) + t(apply(E_SS, 1,
+        (-1/2)*(log(2*pi) + t(apply(E_SS, 1,
                     function(x) E_log_sigma_sq + (1/E_sigma_sq)*x)))
     )
 

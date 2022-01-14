@@ -4,7 +4,7 @@
 \alias{elbo}
 \title{Title}
 \usage{
-elbo(mod, variational_parameters, expectations, prior_parameters)
+elbo(y, w, B = 2, K = 20, variational_parameters, prior_parameters)
 }
 \arguments{
 \item{prior_parameters}{}
