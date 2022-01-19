@@ -60,9 +60,10 @@ VBMIM <- function(
     alpha_q_phi <- runif(B, 0, 1)
 
     phi_q_phi <- matrix(0, nrow = N, ncol = B)
-    for(i in 1:N) {
-        phi_q_phi[i, w[i]] <- 1
-    }
+    # for(i in 1:N) {
+    #     phi_q_phi[i, w[i]] <- 1
+    # }
+    phi_q_phi[cbind(1:N, w)] <- 1
 
     for(m in 1:max_iter) {
 
@@ -79,15 +80,10 @@ VBMIM <- function(
         ## optimal density for z_ik
         for(b in 1:B) {
             for(k in 1:K) {
-                # tilde_pi_q_pi[b, , k] <- E_pi[k, b] - (1/2)^log(2*pi) -
-                #     (1/2)*(log(B_q_sigmasq[k]) - digamma(A_q_sigmasq[k])) -
-                #     (1/2)*(1/E_sigma_sq[k])*((y-mu_q_mu[k])^2 + sigmasq_q_mu[k]) +
-                #     digamma(alpha_q_phi[b]) + digamma(sum(alpha_q_phi))
-
-                tilde_pi_q_pi[b, , k] <- E_log_pi[k, b] - (1/2)^log(2*pi) -
+                tilde_pi_q_pi[b, , k] <- (E_log_pi[k, b] - (1/2)^log(2*pi) -
                     (1/2)*(E_log_sigma_sq[k]) -
-                    (1/2)*(1/E_sigma_sq[k])*((y-mu_q_mu[k])^2 + sigmasq_q_mu[k]) +
-                    E_log_phi[b]
+                    (1/2)*(1/E_sigma_sq[k])*((y-mu_q_mu[k])^2 + sigmasq_q_mu[k]))*(w == b)
+
             }
             pi_q_pi[b, , ] <- multinomial_logit(tilde_pi_q_pi[b, , ])
         }
