@@ -4,6 +4,7 @@
 #' @param B
 #' @param K
 #' @param max_iter
+#' @param w
 #' @param prior_parameters
 #' @param initial_values
 #'
@@ -16,87 +17,58 @@ vbmm <- function(
     B = 2,
     K = 20,
     max_iter = 30,
+    w = NULL,
     prior_parameters = NULL,
     initial_values = NULL
 ) {
 
-    N <- length(y) # sample size
-    y_mat <- matrix(rep(y, K), nrow = N, ncol = K)
-    mod <- list(
-        y = y_mat,
-        N = N,
-        B = B,
-        K = K
-    )
-    elbos <- rep(-Inf, max_iter)
+    mixture_model <- list()
 
-    # get prior parameters
-    if(is.null(prior_parameters)) {
-        prior_parameters <- default_priors()
-    }
+    if (B%%1 != 0  | B < 1 ) {
+        stop("B must be an integer greater than 0")
+    } else {
 
-    # initialize variational parameters
-    variational_parameters <-
-        update_variational_parameters(mod,
-                                      variational_parameters = NULL,
-                                      expectations = NULL,
-                                      prior_parameters = prior_parameters,
-                                      initialize = TRUE,
-                                      initial_values = initial_values)
+        if (B == 1) {
 
-    # calculate initial expectations
-    expected_values <- update_expectations(mod,
-                                           variational_parameters = variational_parameters)
+            mixture_model["Type"] <- "DPGMM"
 
-    for(i in 1:max_iter) {
-        if(i %% 100 == 0) {
-            message("Iteration ", i, " of ", max_iter)
-        }
+            if (!is.null(w)) {
+                stop("if B is 1 then w must be NULL")
+            }
 
-        ## update variational parameters
-        variational_parameters <-
-            update_variational_parameters(mod,
-                                          variational_parameters = variational_parameters,
-                                          expectations = expected_values,
-                                          prior_parameters = prior_parameters,
-                                          initialize = FALSE,
-                                          initial_values = NULL)
+        } else {
 
-        print(round(colMeans(variational_parameters$phi_w), 2))
-        print(round(colMeans(variational_parameters$p_z[, 1, ]), 2))
-        print(round(colMeans(variational_parameters$p_z[, 2, ]), 2))
-
-        if(all(round(colMeans(variational_parameters$phi_w), 2) == c(1,1))) {
-
-            return(
-                list(
-                    mod = mod,
-                    variational_parameters = variational_parameters,
-                    expected_values = expected_values,
-                    elbos = elbos
-                )
-            )
+            mixture_model[["w"]] <- w
+            mixture_model["Type"] <- "MDPGMM"
 
         }
 
-        ## update expected values
-        expected_values <- update_expectations(mod,
-                                               variational_parameters = variational_parameters)
 
-        ## update elbo
-        elbos[i] <- elbo(mod,
-                         variational_parameters,
-                         expectations = expected_values,
-                         prior_parameters)
+
+        mixture_model["B"] <- B
+    }
+
+    if (K%%1 != 0  | K < 2 ) {
+        stop("K must be an integer greater than 1")
+    } else {
+        mixture_model["K"] <- K
+    }
+
+
+    mixture_model[["prior_parameters"]] <- NULL
+    mixture_model[["initial_values"]] <- NULL
+    mixture_model[["y"]] <- y
+    mixture_model[["max_iter"]] <- max_iter
+    mixture_model[["variational_parameters"]] <- NULL
+
+    if ( mixture_model$Type == "MDPGMM") {
+        output <- vi_mdpgmm(mixture_model)
+
+    } else if (mixture_model$Type == "DPGMM") {
+
+        output <- vi_dpgmm(mixture_model)
 
     }
 
-    return(
-        list(
-            mod = mod,
-            variational_parameters = variational_parameters,
-            expected_values = expected_values,
-            elbos = elbos
-        )
-    )
+    return(output)
 }

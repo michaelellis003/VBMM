@@ -9,6 +9,7 @@ vbmm(
   B = 2,
   K = 20,
   max_iter = 30,
+  w = NULL,
   prior_parameters = NULL,
   initial_values = NULL
 )
