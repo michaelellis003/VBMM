@@ -1,6 +1,34 @@
 library(VBMM)
 library(tidyverse)
+library(MCMCpack)
 
+## B = 1 -----------------------------------------------------------------------
+N <- 1000
+K <- 3
+mu <- c(-20, 5, 25)
+sigmasq <- c(0.5, 0.5, 0.5)
+probs <- c(1/2, 1/4, 1/4)
+
+sample_clusters <- sample(1:K, size = N, replace = TRUE)
+y <- rnorm(N, mean = mu[sample_clusters], sd = sqrt(sigmasq[sample_clusters]))
+
+B <- 1
+K <- 20
+max_iter <- 50
+output <- vbmm(
+    y = y,
+    B = B,
+    K = K,
+    max_iter,
+    w = NULL
+)
+
+plot_q_mu(output, type = "boxplot")
+round(output$mu_q_mu, 2)
+plot_q_sigmasq(output, type = "boxplot")
+plot_elbo(output)
+
+# B = 2 ------------------------------------------------------------------------
 ## simulate data
 mix <- simulate_mixture(
     N = 1000,
@@ -16,19 +44,18 @@ y <- mix$y
 w <- mix$w
 B <- mix$B
 K <- 20
-iter <- 2000
+max_iter <- 50
 output <- vbmm(
     y = y,
     w = w,
     B = B,
     K = K,
-    max_iter = iter
+    max_iter = max_iter
 )
 
 library(ggtern)
-colMeans(output$phi_q_phi)
 alpha_q_phi <- output$alpha_q_phi
-phi_sim <- rdirichlet(1000, alpha_q_phi)
+phi_sim <- MCMCpack::rdirichlet(1000, alpha_q_phi)
 dat <- data.frame(
     x = phi_sim[, 1],
     y = phi_sim[, 2],
@@ -53,3 +80,4 @@ round(output$mu_q_mu, 2)
 
 plot_q_sigmasq(output, type = "boxplot")
 round(output$B_q_sigmasq/output$A_q_sigmasq, 2)
+plot_elbo(output)
