@@ -30,10 +30,13 @@ vbmm <- function(
 
         if (B == 1) {
 
+            N <- length(y)
             mixture_model["Type"] <- "DPGMM"
 
             if (!is.null(w)) {
                 stop("if B is 1 then w must be NULL")
+            } else {
+                mixture_model[["w"]] <- rep(1, N)
             }
 
         } else {
@@ -42,8 +45,6 @@ vbmm <- function(
             mixture_model["Type"] <- "MDPGMM"
 
         }
-
-
 
         mixture_model["B"] <- B
     }
@@ -61,14 +62,7 @@ vbmm <- function(
     mixture_model[["max_iter"]] <- max_iter
     mixture_model[["variational_parameters"]] <- NULL
 
-    if ( mixture_model$Type == "MDPGMM") {
-        output <- vi_mdpgmm(mixture_model)
-
-    } else if (mixture_model$Type == "DPGMM") {
-
-        output <- vi_dpgmm(mixture_model)
-
-    }
+    output <- vi(mixture_model)
 
     return(output)
 }

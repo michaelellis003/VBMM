@@ -4,10 +4,10 @@
 \alias{stick_breaking_expectation}
 \title{Title}
 \usage{
-stick_breaking_expectation(B, K, alpha_q_V, beta_q_V)
+stick_breaking_expectation(B, K, E_log_V, E_log_1_V)
 }
 \arguments{
-\item{beta_q_V}{}
+\item{E_log_1_V}{}
 }
 \value{
 

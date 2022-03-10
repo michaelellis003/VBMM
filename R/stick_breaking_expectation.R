@@ -2,20 +2,14 @@
 #'
 #' @param B
 #' @param K
-#' @param alpha_q_V
-#' @param beta_q_V
+#' @param E_log_V
+#' @param E_log_1_V
 #'
 #' @return
 #' @export
 #'
 #' @examples
-stick_breaking_expectation <- function(B, K, alpha_q_V, beta_q_V) {
-
-    alpha_q_V <- as.matrix(alpha_q_V)
-    beta_q_V <- as.matrix(beta_q_V)
-
-    E_log_V <- digamma(alpha_q_V) - digamma(alpha_q_V + beta_q_V) # E[log V_bk]
-    E_log_1_V <- digamma(beta_q_V) - digamma(alpha_q_V + beta_q_V) # E[log 1-V_bk]
+stick_breaking_expectation <- function(B, K, E_log_V, E_log_1_V) {
 
     if (B > 1) {
         E_log_p <- matrix(NA, nrow = K, ncol = B)
